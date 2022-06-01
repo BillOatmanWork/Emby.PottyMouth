@@ -80,6 +80,10 @@ namespace PottyMouth
             string session = e.Session.Id;
             Log.Debug("Playback Session = " + session + " Path = " + filePath);
 
+            Log.Debug("Session Supported Commands:");
+            foreach(string c in e.Session.Capabilities.SupportedCommands)
+                Log.Debug(c);
+
             ReadEdlFile(e);
         }
 
