@@ -80,9 +80,9 @@ namespace PottyMouth
             string session = e.Session.Id;
             Log.Debug("Playback Session = " + session + " Path = " + filePath);
 
-            Log.Debug("Session Supported Commands:");
-            foreach(string c in e.Session.Capabilities.SupportedCommands)
-                Log.Debug(c);
+            //Log.Debug("Session Supported Commands:");
+            //foreach(string c in e.Session.Capabilities.SupportedCommands)
+            //    Log.Debug(c);
 
             ReadEdlFile(e);
         }
@@ -233,10 +233,10 @@ namespace PottyMouth
         {
             // PottyMouth
             GeneralCommand gcMute = new GeneralCommand();
-            gcMute.Name = "mute";
+            gcMute.Name = "Mute";
 
             GeneralCommand gcUnMute = new GeneralCommand();
-            gcUnMute.Name = "unmute";
+            gcUnMute.Name = "Unmute";
 
             try
             {
