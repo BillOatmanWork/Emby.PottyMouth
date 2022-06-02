@@ -19,7 +19,6 @@ namespace PottyMouth
     public class ServerEntryPoint : IServerEntryPoint
     {
         private List<EdlSequence> muteList = new List<EdlSequence>();
-        private List<EdlTimestamp> timestamps = new List<EdlTimestamp>();
 
         private ISessionManager SessionManager { get; set; }
 
@@ -31,12 +30,18 @@ namespace PottyMouth
 
         private string Locale = string.Empty;
 
+        private GeneralCommand gcMute = new GeneralCommand();
+        private GeneralCommand gcUnMute = new GeneralCommand();
+       
         public ServerEntryPoint(ISessionManager sessionManager, IUserManager userManager, ILogManager logManager, IServerConfigurationManager configManager)
         {
             SessionManager = sessionManager;
             UserManager = userManager;
             ConfigManager = configManager;
             Log = logManager.GetLogger(Plugin.Instance.Name);
+
+            gcMute.Name = "Mute";
+            gcUnMute.Name = "Unmute";
         }
 
 
@@ -78,13 +83,20 @@ namespace PottyMouth
 
             string filePath = e.MediaInfo.Path;
             string session = e.Session.Id;
-            Log.Debug("Playback Session = " + session + " Path = " + filePath);
 
             //Log.Debug("Session Supported Commands:");
             //foreach(string c in e.Session.Capabilities.SupportedCommands)
             //    Log.Debug(c);
 
-            ReadEdlFile(e);
+            if (e.Session.Capabilities.SupportedCommands.Contains("Mute"))
+            {
+                Log.Debug($"Playback Session = {session}  Path = {filePath}");
+
+                if(ReadEdlFile(e) == true)
+                    Log.Info($"{filePath} will have its audio censored by request.");
+            }
+            else
+                Log.Info($"Playback Session {session} Path {filePath}. Mute is not supported.  Not possible to mute out the desired audio.");
         }
 
         /// <summary>
@@ -95,24 +107,19 @@ namespace PottyMouth
         private void PlaybackProgress(object sender, PlaybackProgressEventArgs e)
         {
             if (Plugin.Instance.Configuration.EnablePottyMouth == false)
-            {
-                Log.Debug("PlaybackStart: Plugin is disabled.");
                 return;
-            }
 
             if (e.Session.PlayState.IsPaused || !e.PlaybackPositionTicks.HasValue)
-            {
-                Log.Debug("PlaybackStart: paused.");
                 return;
-            }
 
             string session = e.Session.Id;         
             long playbackPositionTicks = e.PlaybackPositionTicks.Value;
-            Log.Debug($"playbackPositionTicks  {playbackPositionTicks}   seconds  {playbackPositionTicks / TimeSpan.TicksPerSecond}");
-
-            EdlSequence found = muteList.Find(x => x.sessionId == session && playbackPositionTicks >= x.startTicks && playbackPositionTicks < (x.endTicks - 1000));
+            
+            EdlSequence found = muteList.Find(x => x.sessionId == session && x.processed == false && playbackPositionTicks >= x.startTicks && playbackPositionTicks < (x.endTicks - 1000));
             if (found != null)
             {
+                found.processed = true;
+
                 string controlSession = (e.Session.SupportsRemoteControl)
                     ? e.Session.Id
                     : SessionManager.Sessions.Where(i => i.DeviceId == e.Session.DeviceId && i.SupportsRemoteControl).FirstOrDefault().Id;
@@ -122,17 +129,11 @@ namespace PottyMouth
                     Log.Debug($"No control session for SessionID {e.Session.Id}");
                     return;
                 }
+             
+                MuteAudio(controlSession, found.endTicks - found.startTicks);
 
-                found.skipped = true;
-                MuteBadWord(controlSession, found.endTicks - found.startTicks);
-
-                //if (Plugin.Instance.Configuration.DisableMessage == false && e.Session.Capabilities.SupportedCommands.Contains("DisplayMessage"))
-                //    SendMessageToClient(controlSession);
-
-                Log.Debug("Muting bad word. Session: " + session + " Start = " + found.startTicks.ToString() + "  End = " + found.endTicks.ToString());
+                Log.Debug("Muting audio. Session: " + session + " Start = " + found.startTicks.ToString() + "  End = " + found.endTicks.ToString());
             }
-            else
-                Log.Debug("Found = null");
         }
 
         /// <summary>
@@ -147,6 +148,13 @@ namespace PottyMouth
 
             string name = e.MediaInfo.Name;
             string sessionID = e.Session.Id;
+
+            // Remove all items in skip list with this session ID
+            lock (muteList)
+            {
+                muteList.RemoveAll(x => x.sessionId == sessionID);
+            }
+
             Log.Debug("Playback Stopped. Session = " + sessionID + " Name = " + name);
         }
 
@@ -154,7 +162,7 @@ namespace PottyMouth
         /// Read and process the comskip EDL file
         /// </summary>
         /// <param name="e"></param>
-        private void ReadEdlFile(PlaybackProgressEventArgs e)
+        private bool ReadEdlFile(PlaybackProgressEventArgs e)
         {
             string filePath = e.MediaInfo.Path;
             string session = e.Session.Id;
@@ -168,7 +176,7 @@ namespace PottyMouth
             if (!File.Exists(edlFile))
             {
                 Log.Debug($"PottyMouth EDL file [{edlFile}] does not exist.");
-                return;
+                return false;
             }
 
             // Remove any stragglers
@@ -191,6 +199,7 @@ namespace PottyMouth
                         string[] parts = line.Split('\t');
                         Log.Debug("parts " + parts[0] + " " + parts[1] + " " + parts[2]);
 
+                        // 1 indicates it is meant to mute audio, not skip
                         if (parts[2] == "1")
                         {
                             EdlSequence seq = new EdlSequence();
@@ -208,7 +217,7 @@ namespace PottyMouth
             catch (Exception ex)
             {
                 Log.Error("Could not parse EDL file " + edlFile + ". Exception: " + ex.Message);
-                return;
+                return false;
             }
 
             lock (muteList)
@@ -221,6 +230,8 @@ namespace PottyMouth
             {
                 Log.Debug("Start: " + (s.startTicks / TimeSpan.TicksPerSecond).ToString() + "  End: " + (s.endTicks / TimeSpan.TicksPerSecond).ToString());
             }
+
+            return true;
         }
 
 
@@ -229,34 +240,42 @@ namespace PottyMouth
         /// </summary>
         /// <param name="sessionID"></param>
         /// <param name="seek"></param>
-        private async void MuteBadWord(string sessionID, long timeTicks)
+        private async void MuteAudio(string sessionID, long timeTicks)
         {
-            // PottyMouth
-            GeneralCommand gcMute = new GeneralCommand();
-            gcMute.Name = "Mute";
-
-            GeneralCommand gcUnMute = new GeneralCommand();
-            gcUnMute.Name = "Unmute";
-
             try
             {
                 await SessionManager.SendGeneralCommand(sessionID, sessionID, gcMute, CancellationToken.None).ConfigureAwait(false);
 
                 int sleepTimeSec = (int)(timeTicks / TimeSpan.TicksPerSecond);
-          //      Log.Debug($"sleepTimeSec  {sleepTimeSec}");
-
-                Thread.Sleep(sleepTimeSec * 1000);
+                //      Log.Debug($"sleepTimeSec  {sleepTimeSec}");
+                ThreadInfo ti = new ThreadInfo();
+                ti.muteTimeSeconds = sleepTimeSec;
+                ti.sessionID = sessionID;
+                Thread unmuteThread = new Thread(WaitThenUnmute);
+                unmuteThread.Start();
             }
-            catch (Exception ex)
+            catch //(Exception ex)
             {
          //       Log.Error(ex.Message);
             }
-            finally
+        }
+
+        private void WaitThenUnmute(Object obj)
+        {
+            ThreadInfo ti = (ThreadInfo)obj;
+
+            Log.Debug($"WaitThenUnmute: Sleeping {ti.muteTimeSeconds * 1000} seconds for session {ti.sessionID}");
+            Thread.Sleep(ti.muteTimeSeconds * 1000);
+
+            try
             {
-                await SessionManager.SendGeneralCommand(sessionID, sessionID, gcUnMute, CancellationToken.None).ConfigureAwait(false);
+                SessionManager.SendGeneralCommand(ti.sessionID, ti.sessionID, gcUnMute, CancellationToken.None);
             }
+            catch { }
         }
     }
+
+
 
     /// <summary>
     /// EDL file representation
@@ -264,7 +283,7 @@ namespace PottyMouth
     public class EdlSequence
     {
         public string sessionId { get; set; }
-        public bool skipped { get; set; } = false;
+        public bool processed { get; set; } = false;
         public long startTicks { get; set; }
         public long endTicks { get; set; }
     }
@@ -276,5 +295,11 @@ namespace PottyMouth
     {
         public long timeLoaded { get; set; }
         public string sessionId { get; set; }
+    }
+
+    public class ThreadInfo
+    {
+        public string sessionID { get; set; }
+        public int muteTimeSeconds { get; set; }
     }
 }
