@@ -83,6 +83,13 @@ namespace PottyMouth
 
             string filePath = e.MediaInfo.Path;
             string session = e.Session.Id;
+            string edlFile = Path.ChangeExtension(filePath, ".edl");
+
+            if (!File.Exists(edlFile))
+            {
+                Log.Debug($"PottyMouth EDL file [{edlFile}] does not exist.");
+                return;
+            }
 
             //Log.Debug("Session Supported Commands:");
             //foreach(string c in e.Session.Capabilities.SupportedCommands)
