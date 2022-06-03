@@ -236,7 +236,7 @@ namespace PottyMouth
 
 
         /// <summary>
-        /// Skip the commercial for the given session by seeking to the end of the commercial.
+        /// Mute the audio for the given session for the given duration
         /// </summary>
         /// <param name="sessionID"></param>
         /// <param name="seek"></param>
@@ -252,7 +252,7 @@ namespace PottyMouth
                 ti.muteTimeSeconds = sleepTimeSec;
                 ti.sessionID = sessionID;
                 Thread unmuteThread = new Thread(WaitThenUnmute);
-                unmuteThread.Start();
+                unmuteThread.Start(ti);
             }
             catch //(Exception ex)
             {
