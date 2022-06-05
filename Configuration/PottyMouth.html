@@ -26,6 +26,20 @@
 							Automatically mute audio during playback for bad words defined in EDL file.
 						</div>
 					</div>
+					<div class="inputContainer">
+						<label class="inputLabel inputLabelUnfocused" for="startOffset">Milliseconds to mute ahead of mute point:</label>
+						<input type="number" id="startOffset" min="0" max="2000" step="100" label="Milliseconds to mute ahead of mute point:" class="emby-input">
+						<div class="fieldDescription">
+							The number miliseconds to send the mute command to the Emby client ahead of the detected mute start point.
+						</div>
+					</div>
+					<div class="inputContainer">
+						<label class="inputLabel inputLabelUnfocused" for="endOffset">Milliseconds to unmute after the mute end point:</label>
+						<input type="number" id="endOffset" min="0" max="2000" step="100" label="Milliseconds to unmute after the mute end point:" class="emby-input">
+						<div class="fieldDescription">
+							The number miliseconds to send the unmute command to the Emby client after the detected mute end point.
+						</div>
+					</div>
 					<div><b>This plugin is completely free.</b></div>
 					<div><b>If you find it of value and have the means, please consider donating to a local charity that benefits children.</b></div>
 				</form>

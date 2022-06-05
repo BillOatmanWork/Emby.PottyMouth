@@ -203,18 +203,26 @@ namespace PottyMouth
                 {
                     while ((line = reader.ReadLine()) != null)
                     {
+                        if (string.IsNullOrEmpty(line))
+                            continue;
+
                         string[] parts = line.Split('\t');
                         Log.Debug("parts " + parts[0] + " " + parts[1] + " " + parts[2]);
 
                         // 1 indicates it is meant to mute audio, not skip
                         if (parts[2] == "1")
                         {
+                            Log.Info($"StartOffset = {Plugin.Instance.Configuration.startOffset}");
+                            Log.Info($"EndOffset = {Plugin.Instance.Configuration.endOffset}");
+
                             EdlSequence seq = new EdlSequence();
                             seq.sessionId = session;
-                            seq.startTicks = (long)(double.Parse(parts[0]) * (double)TimeSpan.TicksPerSecond);
+                            seq.startTicks = (long)((double.Parse(parts[0]) - Plugin.Instance.Configuration.startOffset) * (double)TimeSpan.TicksPerSecond);
+
                             if (seq.startTicks < TimeSpan.TicksPerSecond)
                                 seq.startTicks = TimeSpan.TicksPerSecond;
-                            seq.endTicks = (long)(double.Parse(parts[1]) * (double)TimeSpan.TicksPerSecond);
+
+                            seq.endTicks = (long)((double.Parse(parts[1]) + Plugin.Instance.Configuration.endOffset) * (double)TimeSpan.TicksPerSecond);
 
                             commTempList.Add(seq);
                         }
@@ -232,10 +240,10 @@ namespace PottyMouth
                 muteList.AddRange(commTempList);
             }
 
-            Log.Debug("PottyMouth List in seconds for " + e.MediaInfo.Name + ":");
+            Log.Debug("PottyMouth List in ticks for " + e.MediaInfo.Name + ":");
             foreach (EdlSequence s in commTempList)
             {
-                Log.Debug("Start: " + (s.startTicks / TimeSpan.TicksPerSecond).ToString() + "  End: " + (s.endTicks / TimeSpan.TicksPerSecond).ToString());
+                Log.Debug("Start: " + s.startTicks.ToString() + "  End: " + s.endTicks.ToString());
             }
 
             return true;
@@ -253,8 +261,7 @@ namespace PottyMouth
             {
                 await SessionManager.SendGeneralCommand(sessionID, sessionID, gcMute, CancellationToken.None).ConfigureAwait(false);
 
-                int sleepTimeSec = (int)(timeTicks / TimeSpan.TicksPerSecond);
-                //      Log.Debug($"sleepTimeSec  {sleepTimeSec}");
+                int sleepTimeSec = (int)Math.Round(((double)timeTicks / (double)TimeSpan.TicksPerSecond), MidpointRounding.AwayFromZero);
                 ThreadInfo ti = new ThreadInfo();
                 ti.muteTimeSeconds = sleepTimeSec;
                 ti.sessionID = sessionID;
@@ -271,7 +278,7 @@ namespace PottyMouth
         {
             ThreadInfo ti = (ThreadInfo)obj;
 
-            Log.Debug($"WaitThenUnmute: Sleeping {ti.muteTimeSeconds * 1000} seconds for session {ti.sessionID}");
+       //     Log.Debug($"WaitThenUnmute: Sleeping {ti.muteTimeSeconds * 1000} seconds for session {ti.sessionID}");
             Thread.Sleep(ti.muteTimeSeconds * 1000);
 
             try
