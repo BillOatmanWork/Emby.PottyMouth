@@ -212,17 +212,20 @@ namespace PottyMouth
                         // 1 indicates it is meant to mute audio, not skip
                         if (parts[2] == "1")
                         {
-                            Log.Info($"StartOffset = {Plugin.Instance.Configuration.startOffset}");
-                            Log.Info($"EndOffset = {Plugin.Instance.Configuration.endOffset}");
+                            Log.Debug($"StartOffset = {Plugin.Instance.Configuration.startOffset}");
+                            Log.Debug($"EndOffset = {Plugin.Instance.Configuration.endOffset}");
 
                             EdlSequence seq = new EdlSequence();
                             seq.sessionId = session;
-                            seq.startTicks = (long)((double.Parse(parts[0]) - Plugin.Instance.Configuration.startOffset) * (double)TimeSpan.TicksPerSecond);
+                            seq.startTicks = (long)((double.Parse(parts[0]) - (double)(Plugin.Instance.Configuration.startOffset  / 1000.0)) * (double)TimeSpan.TicksPerSecond);
 
                             if (seq.startTicks < TimeSpan.TicksPerSecond)
                                 seq.startTicks = TimeSpan.TicksPerSecond;
 
-                            seq.endTicks = (long)((double.Parse(parts[1]) + Plugin.Instance.Configuration.endOffset) * (double)TimeSpan.TicksPerSecond);
+                            seq.endTicks = (long)((double.Parse(parts[1]) + (double)(Plugin.Instance.Configuration.endOffset / 1000.0)) * (double)TimeSpan.TicksPerSecond);
+
+                            Log.Debug($"Final startTicks = {seq.startTicks}");
+                            Log.Debug($"Final endTicks = {seq.endTicks}");
 
                             commTempList.Add(seq);
                         }
