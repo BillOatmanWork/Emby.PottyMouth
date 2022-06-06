@@ -1,11 +1,8 @@
 ﻿using MediaBrowser.Controller.Configuration;
-using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Controller.Session;
-using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Logging;
-using MediaBrowser.Model.Querying;
 using MediaBrowser.Model.Session;
 using System;
 using System.Collections.Generic;
@@ -57,10 +54,6 @@ namespace PottyMouth
             // Set for correct parsing of the EDL file regardless of servers culture
             CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-US");
 
-            // TODO: When Emby adds clients locale to the Session object, use that instead of the servers locale below.
-            Locale = ConfigManager.Configuration.UICulture;
-            Log.Debug("Locale = " + Locale);
-
             SessionManager.PlaybackStart += PlaybackStart;
             SessionManager.PlaybackStopped += PlaybackStopped;
             SessionManager.PlaybackProgress += PlaybackProgress;
@@ -77,7 +70,7 @@ namespace PottyMouth
         {
             if (Plugin.Instance.Configuration.EnablePottyMouth == false)
             {
-                Log.Debug("PlaybackStart: Plugin is disabled.");
+             //   Log.Debug("PlaybackStart: Plugin is disabled.");
                 return;
             }
 
@@ -91,6 +84,7 @@ namespace PottyMouth
                 return;
             }
 
+            // The below will dump out the clients supported commands for debugging
             //Log.Debug("Session Supported Commands:");
             //foreach(string c in e.Session.Capabilities.SupportedCommands)
             //    Log.Debug(c);
@@ -107,7 +101,7 @@ namespace PottyMouth
         }
 
         /// <summary>
-        /// Executed on a playback prorgress Emby event. See if it is in a identified commercial and skip if it is.
+        /// Executed on a playback prorgress Emby event. Check for muting.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -166,7 +160,7 @@ namespace PottyMouth
         }
 
         /// <summary>
-        /// Read and process the comskip EDL file
+        /// Read and process the EDL file
         /// </summary>
         /// <param name="e"></param>
         private bool ReadEdlFile(PlaybackProgressEventArgs e)
