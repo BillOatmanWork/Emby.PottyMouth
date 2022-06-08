@@ -218,6 +218,9 @@ namespace PottyMouth
 
                             seq.endTicks = (long)((double.Parse(parts[1]) + (double)(Plugin.Instance.Configuration.endOffset / 1000.0)) * (double)TimeSpan.TicksPerSecond);
 
+                            // Adjust a little for network latency.  Can be corrected by setting end offset higher if necessary
+                            seq.endTicks = seq.endTicks - ((long)0.5 * TimeSpan.TicksPerSecond);
+
                             Log.Debug($"Final startTicks = {seq.startTicks}");
                             Log.Debug($"Final endTicks = {seq.endTicks}");
 
