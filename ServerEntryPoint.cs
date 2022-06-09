@@ -3,6 +3,7 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Controller.Session;
 using MediaBrowser.Model.Logging;
+using MediaBrowser.Model.Querying;
 using MediaBrowser.Model.Session;
 using System;
 using System.Collections.Generic;
@@ -130,10 +131,19 @@ namespace PottyMouth
                     Log.Debug($"No control session for SessionID {e.Session.Id}");
                     return;
                 }
-             
-                MuteAudio(controlSession, found.endTicks - found.startTicks);
 
-                Log.Debug("Muting audio. Session: " + session + " Start = " + found.startTicks.ToString() + "  End = " + found.endTicks.ToString());
+                if(found.type == 0)  // skip
+                {
+                    SkipCommercial(controlSession, found.endTicks);
+
+                    Log.Debug("Skipping ahead. Session: " + session + " Start = " + found.startTicks.ToString() + "  End = " + found.endTicks.ToString());
+                }
+                else  // mute
+                {
+                    MuteAudio(controlSession, found.endTicks - found.startTicks);
+
+                    Log.Debug("Muting audio. Session: " + session + " Start = " + found.startTicks.ToString() + "  End = " + found.endTicks.ToString());
+                }
             }
         }
 
@@ -203,8 +213,22 @@ namespace PottyMouth
                         string[] parts = line.Split('\t');
                         Log.Debug("parts " + parts[0] + " " + parts[1] + " " + parts[2]);
 
-                        // 1 indicates it is meant to mute audio, not skip
-                        if (parts[2] == "1")
+                        // 0 indicates it is skip a section
+                        if (parts[2] == "0")
+                        {
+                            EdlSequence seq = new EdlSequence();
+                            seq.sessionId = session;
+                            seq.startTicks = (long)(double.Parse(parts[0]) * (double)TimeSpan.TicksPerSecond);
+                            if (seq.startTicks < TimeSpan.TicksPerSecond)
+                                seq.startTicks = TimeSpan.TicksPerSecond;
+                            seq.endTicks = (long)(double.Parse(parts[1]) * (double)TimeSpan.TicksPerSecond);
+
+                            seq.type = 0;
+
+                            commTempList.Add(seq);
+                        }  
+                        else
+                        if (parts[2] == "1")  // 1 indicates it is meant to mute audio
                         {
                             Log.Debug($"StartOffset = {Plugin.Instance.Configuration.startOffset}");
                             Log.Debug($"EndOffset = {Plugin.Instance.Configuration.endOffset}");
@@ -223,6 +247,8 @@ namespace PottyMouth
 
                             Log.Debug($"Final startTicks = {seq.startTicks}");
                             Log.Debug($"Final endTicks = {seq.endTicks}");
+
+                            seq.type = 1;
 
                             commTempList.Add(seq);
                         }
@@ -249,7 +275,6 @@ namespace PottyMouth
             return true;
         }
 
-
         /// <summary>
         /// Mute the audio for the given session for the given duration
         /// </summary>
@@ -272,6 +297,23 @@ namespace PottyMouth
             {
          //       Log.Error(ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Skip the commercial for the given session by seeking to the end of the commercial.
+        /// </summary>
+        /// <param name="sessionID"></param>
+        /// <param name="seek"></param>
+        private void SkipCommercial(string sessionID, long seek)
+        {
+            PlaystateRequest playstateRequest = new PlaystateRequest();
+            playstateRequest.Command = PlaystateCommand.Seek;
+
+            UserQuery userListQuery = new UserQuery();
+            userListQuery.IsAdministrator = true;
+            playstateRequest.ControllingUserId = this.UserManager.GetUserList(userListQuery).FirstOrDefault().Id.ToString();
+            playstateRequest.SeekPositionTicks = new long?(seek);
+            SessionManager.SendPlaystateCommand((string)null, sessionID, playstateRequest, CancellationToken.None);
         }
 
         private void WaitThenUnmute(Object obj)
@@ -300,6 +342,7 @@ namespace PottyMouth
         public bool processed { get; set; } = false;
         public long startTicks { get; set; }
         public long endTicks { get; set; }
+        public int type { get; set; }       // 0 = skip; 1 = mute audio
     }
 
     /// <summary>
