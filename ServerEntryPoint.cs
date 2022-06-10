@@ -324,7 +324,7 @@ namespace PottyMouth
         }
 
         /// <summary>
-        /// Skip the commercial for the given session by seeking to the end of the commercial.
+        /// Skip ahead in the video in the given session to the seek point
         /// </summary>
         /// <param name="sessionID"></param>
         /// <param name="seek"></param>
