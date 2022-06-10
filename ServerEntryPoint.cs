@@ -30,7 +30,9 @@ namespace PottyMouth
 
         private GeneralCommand gcMute = new GeneralCommand();
         private GeneralCommand gcUnMute = new GeneralCommand();
-       
+
+        
+
         public ServerEntryPoint(ISessionManager sessionManager, IUserManager userManager, ILogManager logManager, IServerConfigurationManager configManager)
         {
             SessionManager = sessionManager;
@@ -132,13 +134,13 @@ namespace PottyMouth
                     return;
                 }
 
-                if(found.type == 0)  // skip
+                if(found.type == EdlType.VideoSkip)  
                 {
                     SkipCommercial(controlSession, found.endTicks);
 
                     Log.Debug("Skipping ahead. Session: " + session + " Start = " + found.startTicks.ToString() + "  End = " + found.endTicks.ToString());
                 }
-                else  // mute
+                else 
                 {
                     MuteAudio(controlSession, found.endTicks - found.startTicks);
 
@@ -223,7 +225,7 @@ namespace PottyMouth
                                 seq.startTicks = TimeSpan.TicksPerSecond;
                             seq.endTicks = (long)(double.Parse(parts[1]) * (double)TimeSpan.TicksPerSecond);
 
-                            seq.type = 0;
+                            seq.type = EdlType.VideoSkip;
 
                             commTempList.Add(seq);
                         }  
@@ -248,7 +250,7 @@ namespace PottyMouth
                             Log.Debug($"Final startTicks = {seq.startTicks}");
                             Log.Debug($"Final endTicks = {seq.endTicks}");
 
-                            seq.type = 1;
+                            seq.type = EdlType.AudioMute;
 
                             commTempList.Add(seq);
                         }
@@ -267,14 +269,17 @@ namespace PottyMouth
             {
                 elIndex++;
 
-                if (es.type == 1)
+                if (elIndex < commTempList.Count)
                 {
-                    if (commTempList[elIndex].type == 1)
+                    if (es.type == EdlType.AudioMute)
                     {
-                        if (commTempList[elIndex].startTicks - es.endTicks < ((long)2.0 * TimeSpan.TicksPerSecond))
+                        if (commTempList[elIndex].type == EdlType.AudioMute)
                         {
-                            es.endTicks = commTempList[elIndex].endTicks;
-                            commTempList[elIndex].doNotProcess = true;
+                            if (commTempList[elIndex].startTicks - es.endTicks < ((long)2.0 * TimeSpan.TicksPerSecond))
+                            {
+                                es.endTicks = commTempList[elIndex].endTicks;
+                                commTempList[elIndex].doNotProcess = true;
+                            }
                         }
                     }
                 }
@@ -288,7 +293,7 @@ namespace PottyMouth
             Log.Debug("PottyMouth List in ticks for " + e.MediaInfo.Name + ":");
             foreach (EdlSequence s in commTempList)
             {
-                Log.Debug($"Start: {s.startTicks}  End:  {s.endTicks}  DoNotProcess: {s.doNotProcess}");
+                Log.Debug($"Start: {s.startTicks}  End:  {s.endTicks}  Type: {s.type}  DoNotProcess: {s.doNotProcess}");
             }
 
             return true;
@@ -350,7 +355,7 @@ namespace PottyMouth
         }
     }
 
-
+    public enum EdlType { AudioMute, VideoSkip };
 
     /// <summary>
     /// EDL file representation
@@ -362,7 +367,7 @@ namespace PottyMouth
         public bool doNotProcess { get; set; } = false;
         public long startTicks { get; set; }
         public long endTicks { get; set; }
-        public int type { get; set; }       // 0 = skip; 1 = mute audio
+        public EdlType type { get; set; }     
     }
 
     /// <summary>
