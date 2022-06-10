@@ -117,7 +117,7 @@ namespace PottyMouth
             string session = e.Session.Id;         
             long playbackPositionTicks = e.PlaybackPositionTicks.Value;
             
-            EdlSequence found = muteList.Find(x => x.sessionId == session && x.processed == false && playbackPositionTicks >= x.startTicks && playbackPositionTicks < (x.endTicks - 1000));
+            EdlSequence found = muteList.Find(x => x.sessionId == session && x.processed == false && x.doNotProcess == false && playbackPositionTicks >= x.startTicks && playbackPositionTicks < (x.endTicks - 1000));
             if (found != null)
             {
                 found.processed = true;
@@ -261,6 +261,25 @@ namespace PottyMouth
                 return false;
             }
 
+            // If a mute end is too close to the next start mute, there can be a problem.  If they are close (< 2 seconds apart), combine into 1 entry
+            int elIndex = 0;
+            foreach(EdlSequence es in commTempList)
+            {
+                elIndex++;
+
+                if (es.type == 1)
+                {
+                    if (commTempList[elIndex].type == 1)
+                    {
+                        if (commTempList[elIndex].startTicks - es.endTicks < ((long)2.0 * TimeSpan.TicksPerSecond))
+                        {
+                            es.endTicks = commTempList[elIndex].endTicks;
+                            commTempList[elIndex].doNotProcess = true;
+                        }
+                    }
+                }
+            }
+
             lock (muteList)
             {
                 muteList.AddRange(commTempList);
@@ -269,7 +288,7 @@ namespace PottyMouth
             Log.Debug("PottyMouth List in ticks for " + e.MediaInfo.Name + ":");
             foreach (EdlSequence s in commTempList)
             {
-                Log.Debug("Start: " + s.startTicks.ToString() + "  End: " + s.endTicks.ToString());
+                Log.Debug($"Start: {s.startTicks}  End:  {s.endTicks}  DoNotProcess: {s.doNotProcess}");
             }
 
             return true;
@@ -340,6 +359,7 @@ namespace PottyMouth
     {
         public string sessionId { get; set; }
         public bool processed { get; set; } = false;
+        public bool doNotProcess { get; set; } = false;
         public long startTicks { get; set; }
         public long endTicks { get; set; }
         public int type { get; set; }       // 0 = skip; 1 = mute audio
