@@ -136,7 +136,7 @@ namespace PottyMouth
 
                 if(found.type == EdlType.VideoSkip)  
                 {
-                    SkipCommercial(controlSession, found.endTicks);
+                    SkipAhead(controlSession, found.endTicks);
 
                     Log.Debug("Skipping ahead. Session: " + session + " Start = " + found.startTicks.ToString() + "  End = " + found.endTicks.ToString());
                 }
@@ -263,7 +263,7 @@ namespace PottyMouth
                 return false;
             }
 
-            // If a mute end is too close to the next start mute, there can be a problem.  If they are close (< 2 seconds apart), combine into 1 entry
+            // If a mute end is too close to the next start mute, there can be a problem.  If they are close (< 4 seconds apart), combine into 1 entry
             int elIndex = 0;
             foreach(EdlSequence es in commTempList)
             {
@@ -275,7 +275,7 @@ namespace PottyMouth
                     {
                         if (commTempList[elIndex].type == EdlType.AudioMute)
                         {
-                            if (commTempList[elIndex].startTicks - es.endTicks < ((long)2.0 * TimeSpan.TicksPerSecond))
+                            if (commTempList[elIndex].startTicks - es.endTicks < ((long)4.0 * TimeSpan.TicksPerSecond))
                             {
                                 es.endTicks = commTempList[elIndex].endTicks;
                                 commTempList[elIndex].doNotProcess = true;
@@ -328,7 +328,7 @@ namespace PottyMouth
         /// </summary>
         /// <param name="sessionID"></param>
         /// <param name="seek"></param>
-        private void SkipCommercial(string sessionID, long seek)
+        private void SkipAhead(string sessionID, long seek)
         {
             PlaystateRequest playstateRequest = new PlaystateRequest();
             playstateRequest.Command = PlaystateCommand.Seek;
