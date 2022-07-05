@@ -25,3 +25,8 @@ will tell the plugin to skip the video starting at 5 minutes and resuming at 7 m
 The plugin needs to be installed manually, it is not in the plugin catalog (at least not at this time). Take the released DLL file, or create your own DLL file from the source, and put it in the plugin directory along with all of your other plugins. No other files are required.
 
 I came to realize this plugin is at the mercy of both network latency AND the accuracy of the srt file. So I added configurable offsets to start the mute ahead of the start point and after the end point.  These can be set in the plugins settings page (these values are in milliseconds).  You'll want to adjust to taste, but the numbers that work best for me are start of 1000 and end of 0.
+
+### Important Safety Tip
+The Emby client(s) you use must support the mute remote command in order for the plugin to be able to mute the audio. Most seem to, at the time of this writing I only know of two that do not support the command, IPhone and Roku.  And the Roku is currently being evaluated to add the command. You can watch and lend support to this thread if you would like the Roku supported.  
+https://emby.media/community/index.php?/topic/109759-add-mute-command-support/#comment-1156560
+
