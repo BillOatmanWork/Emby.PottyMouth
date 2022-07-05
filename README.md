@@ -4,9 +4,14 @@ Emby plugin to mute undesired words during playback of recordings.
 When a recording is played, this plugin will look for a EDL file and mute audio and/or skip past undesired sections of the recording.
 The file needs to be named the same as the recording but with extension .edl, and in the same directory as the recording.
 So for example if the recording is
+```
 My.Little.Pony.mkv
+```
+
 The EDL file would be
+```
 My.Little.Pony.edl
+```
 
 I also created a utility named PMFileGenerator (https://github.com/BillOatmanWork/PMFileGenerator) to build EDL files from SRT (subtitle) files.
 It creates EDL files with entries such as:
