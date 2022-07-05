@@ -355,6 +355,7 @@ namespace PottyMouth
         }
     }
 
+    #region Classes
     public enum EdlType { AudioMute, VideoSkip };
 
     /// <summary>
@@ -384,4 +385,5 @@ namespace PottyMouth
         public string sessionID { get; set; }
         public int muteTimeSeconds { get; set; }
     }
+    #endregion Classes
 }
