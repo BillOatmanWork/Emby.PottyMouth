@@ -35,3 +35,9 @@ I came to realize this plugin is at the mercy of both network latency AND the ac
 The Emby client(s) you use must support the mute remote command in order for the plugin to be able to mute the audio. Most seem to, at the time of this writing I only know of two that do not support the command, IPhone and Roku.  And the Roku is currently being evaluated to add the command. You can watch and lend support to this thread if you would like the Roku supported.  
 https://emby.media/community/index.php?/topic/109759-add-mute-command-support/#comment-1156560
 
+If you see the text 
+```
+Mute is not supported.  Not possible to mute out the desired audio.
+```
+
+In the log, you'll know the device you were using does not support mute.
