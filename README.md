@@ -41,3 +41,6 @@ Mute is not supported.  Not possible to mute out the desired audio.
 ```
 
 In the log, you'll know the device you were using does not support mute.
+
+### Important Safety Tip 2
+This implementation is not perfect.  Plugins do not have fine control of the audio.  If/when core Emby decides to support something like this, they will be able to do a much more accurate job.  But until that support happens, hopefully this will be of value to those who desire the functionality.
