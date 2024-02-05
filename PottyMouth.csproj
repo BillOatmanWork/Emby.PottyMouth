@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>1.0.1.0</Version>
+    <Version>1.1.0.0</Version>
     <AssemblyName>PottyMouth</AssemblyName>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/BillOatmanWork/Emby.PottyMouth</RepositoryUrl>
@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MediaBrowser.Server.Core" Version="4.7.9" />
+    <PackageReference Include="MediaBrowser.Server.Core" Version="4.8.0.80" />
     <PackageReference Include="System.Memory" Version="4.5.5" />
   </ItemGroup>
 
