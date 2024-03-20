@@ -116,11 +116,9 @@ namespace PottyMouth
             string session = e.Session.Id;         
             long playbackPositionTicks = e.PlaybackPositionTicks.Value;
             
-            EdlSequence found = muteList.Find(x => x.sessionId == session && x.processed == false && x.doNotProcess == false && playbackPositionTicks >= x.startTicks && playbackPositionTicks < (x.endTicks - 1000));
+            EdlSequence found = muteList.Find(x => x.sessionId == session && x.doNotProcess == false && playbackPositionTicks >= x.startTicks && playbackPositionTicks < (x.endTicks - 1000));
             if (found != null)
             {
-                found.processed = true;
-
                 string controlSession = (e.Session.SupportsRemoteControl)
                     ? e.Session.Id
                     : SessionManager.Sessions.Where(i => i.DeviceId == e.Session.DeviceId && i.SupportsRemoteControl).FirstOrDefault().Id;
@@ -133,9 +131,12 @@ namespace PottyMouth
 
                 if(found.type == EdlType.VideoSkip)  
                 {
-                    SkipAhead(controlSession, found.endTicks);
+                    if (found.processed == false)
+                    {
+                        SkipAhead(controlSession, found.endTicks);
 
-                    Log.Debug("Skipping ahead. Session: " + session + " Start = " + found.startTicks.ToString() + "  End = " + found.endTicks.ToString());
+                        Log.Debug("Skipping ahead. Session: " + session + " Start = " + found.startTicks.ToString() + "  End = " + found.endTicks.ToString());
+                    }
                 }
                 else 
                 {
@@ -143,6 +144,8 @@ namespace PottyMouth
 
                     Log.Debug("Muting audio. Session: " + session + " Start = " + found.startTicks.ToString() + "  End = " + found.endTicks.ToString());
                 }
+
+                found.processed = true;
             }
         }
 
