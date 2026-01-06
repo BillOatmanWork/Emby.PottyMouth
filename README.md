@@ -31,6 +31,13 @@ The plugin needs to be installed manually, it is not in the plugin catalog (at l
 
 I came to realize this plugin is at the mercy of both network latency AND the accuracy of the srt file. So I added configurable offsets to start the mute ahead of the start point and after the end point.  These can be set in the plugins settings page (these values are in milliseconds).  You'll want to adjust to taste, but the numbers that work best for me are start of 1000 and end of 0.
 
+## How to Install the Plugin
+1. Download the latest `Pottymouth.dll` from the [Releases](../../releases) page
+2. Copy it to your Emby plugins folder:
+   - **Windows**: `C:\Users\[YourUser]\AppData\Roaming\Emby-Server\plugins`
+   - **Linux**: `/var/lib/emby/plugins`
+3. Restart Emby Server
+
 ### Important Safety Tip
 The Emby client(s) you use must support the mute remote command in order for the plugin to be able to mute the audio. Most seem to, at the time of this writing I only know of two that do not support the command, IPhone and Roku.  And the Roku is currently being evaluated to add the command. You can watch and lend support to this thread if you would like the Roku supported.  
 https://emby.media/community/index.php?/topic/109759-add-mute-command-support/#comment-1156560
